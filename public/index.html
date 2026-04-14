@@ -506,7 +506,7 @@
 <!-- ──────────── MAIN ──────────── -->
 <main>
   <div class="hero">
-    <div class="cost-pill">⚡ $1 USDC per image · Base Network · HyperCycle Node</div>
+    <div class="cost-pill">⚡ $0.00001 per image · Base Network · HyperCycle Node</div>
     <h1>Generate images<br>with <em>AI + Web3</em></h1>
     <p>Pay once per image with USDC on Base. Your prompt goes straight to a HyperCycle AI node.</p>
   </div>
@@ -538,7 +538,7 @@
 
     <button id="generate-btn" onclick="startFlow()">
       <span class="btn-icon">✦</span>
-      Generate Image · Pay $1 USDC
+      Generate Image · Pay $0.00001
     </button>
   </div>
 
@@ -603,7 +603,7 @@
 
   <!-- ── STATS ── -->
   <div class="info-row">
-    <div class="info-tile"><div class="val">$1</div><div class="lbl">USDC / image</div></div>
+    <div class="info-tile"><div class="val">$0.00001</div><div class="lbl">USDC / image</div></div>
     <div class="info-tile"><div class="val">Base</div><div class="lbl">L2 network</div></div>
     <div class="info-tile"><div class="val">~30s</div><div class="lbl">avg. gen time</div></div>
   </div>
@@ -626,7 +626,7 @@ const BASE_CHAIN_ID_HEX = '0x2105';
 // USDC on Base mainnet
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 // $1 USDC = 1_000_000 (6 decimals)
-const PAYMENT_AMOUNT = 1_000_000n;
+const PAYMENT_AMOUNT = 10n;
 
 const USDC_ABI = [
   'function transfer(address to, uint256 amount) returns (bool)',
@@ -792,7 +792,7 @@ async function signHyperCycleRequest(prompt, paymentTxHash) {
     prompt: prompt,
     payment_tx: paymentTxHash,
     payment_chain: 'base',
-    payment_amount_usdc: '1.00',
+    payment_amount_usdc: '0.00001',
     nonce: nonce,
     timestamp: timestamp,
   };
