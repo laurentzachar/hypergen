@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HyperGen — AI Image Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg2: #111114;
+    --bg3: #18181d;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0eeeb;
+    --muted: #888;
+    --accent: #c8f542;
+    --accent-dim: rgba(200,245,66,0.12);
+    --accent-dim2: rgba(200,245,66,0.06);
+    --red: #ff5a5a;
+    --blue: #5aa4ff;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10,10,11,0.92);
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent);
+  }
+  .logo span { color: var(--accent); }
+
+  /* ── WALLET BUTTON ── */
+  #wallet-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 99px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  #wallet-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #wallet-btn.connected {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  #wallet-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  #wallet-btn.connected .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  /* ── NETWORK BADGE ── */
+  #network-badge {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  #network-badge.visible { display: flex; }
+  #network-badge .chain-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+  #network-badge.wrong { border-color: rgba(255,90,90,0.4); color: var(--red); }
+  #network-badge.wrong .chain-dot { background: var(--red); }
+
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 7vw, 64px);
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 14px;
+  }
+  .hero h1 em { color: var(--accent); font-style: normal; }
+  .hero p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 380px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── COST PILL ── */
+  .cost-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--accent-dim2);
+    border: 1px solid rgba(200,245,66,0.2);
+    border-radius: 99px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    margin-bottom: 28px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  /* ── PROMPT ── */
+  .prompt-wrap {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  textarea#prompt {
+    width: 100%;
+    min-height: 100px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    padding: 16px 18px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  textarea#prompt::placeholder { color: var(--muted); }
+  textarea#prompt:focus { border-color: var(--border2); }
+
+  .prompt-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .example-chip {
+    padding: 5px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .example-chip:hover { border-color: var(--border2); color: var(--text); }
+
+  /* ── NODE URL ── */
+  .field-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+  input.node-input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 14px;
+  }
+  input.node-input:focus { border-color: var(--border2); }
+  input.node-input::placeholder { color: var(--muted); }
+
+  /* ── GENERATE BTN ── */
+  #generate-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #0a0a0b;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: -0.2px;
+  }
+  #generate-btn:hover { background: #d6fc5a; transform: translateY(-1px); }
+  #generate-btn:active { transform: translateY(0); }
+  #generate-btn:disabled {
+    background: var(--bg3);
+    color: var(--muted);
+    cursor: not-allowed;
+    transform: none;
+    border: 1px solid var(--border);
+  }
+  #generate-btn .btn-icon { font-size: 16px; }
+
+  /* ── STATUS AREA ── */
+  #status-area { display: none; }
+  #status-area.visible { display: block; }
+
+  .status-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+
+  .step-list { list-style: none; }
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .step-item:last-child { border-bottom: none; }
+  .step-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-icon.pending { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); }
+  .step-icon.active {
+    background: rgba(90,164,255,0.15);
+    border: 1px solid rgba(90,164,255,0.3);
+    color: var(--blue);
+    animation: pulse 1.4s infinite;
+  }
+  .step-icon.done { background: var(--accent-dim); border: 1px solid rgba(200,245,66,0.3); color: var(--accent); }
+  .step-icon.error { background: rgba(255,90,90,0.12); border: 1px solid rgba(255,90,90,0.3); color: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .step-body { flex: 1; }
+  .step-title { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .step-detail { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── RESULT IMAGE ── */
+  #result-area { display: none; }
+  #result-area.visible { display: block; }
+
+  .result-card {
+    background: var(--bg2);
+    border: 1px solid rgba(200,245,66,0.2);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .result-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .result-tag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .result-meta { color: var(--muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+  #result-img {
+    display: block;
+    width: 100%;
+    max-height: 600px;
+    object-fit: contain;
+    background: var(--bg3);
+  }
+  .result-footer {
+    padding: 14px 20px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .dl-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(200,245,66,0.25);
+    border-radius: var(--radius-sm);
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .dl-btn:hover { background: rgba(200,245,66,0.2); }
+  .new-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .new-btn:hover { border-color: var(--border2); color: var(--text); }
+
+  /* ── ERROR ── */
+  #error-area { display: none; }
+  #error-area.visible { display: block; }
+  .error-card {
+    background: rgba(255,90,90,0.06);
+    border: 1px solid rgba(255,90,90,0.2);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    font-size: 14px;
+    color: var(--red);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .error-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── FOOTER INFO ── */
+  .info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .info-tile {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    text-align: center;
+  }
+  .info-tile .val {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .info-tile .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── DISCLAIMER ── */
+  .disclaimer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 28px;
+    line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .disclaimer a { color: var(--accent); text-decoration: none; }
+
+  /* ── OVERLAY ── */
+  #connect-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+  }
+  #connect-overlay.hidden { display: none; }
+  .overlay-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 40px 36px;
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+  }
+  .overlay-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; }
+  .overlay-card p { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
+  .overlay-connect-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #0a0a0b;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .overlay-connect-btn:hover { background: #d6fc5a; }
+
+  @media (max-width: 560px) {
+    header { padding: 16px 20px; }
+    main { padding: 40px 16px 60px; }
+    .info-row { grid-template-columns: 1fr 1fr; }
+    .info-row .info-tile:last-child { grid-column: span 2; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ──────────── CONNECT OVERLAY ──────────── -->
+<div id="connect-overlay">
+  <div class="overlay-card">
+    <div class="logo" style="justify-content:center;margin-bottom:24px;">
+      <div class="logo-dot"></div>
+      Hyper<span>Gen</span>
+    </div>
+    <h2>Connect your wallet</h2>
+    <p>Connect a wallet on the <strong style="color:var(--text)">Base</strong> network to generate AI images via HyperCycle.</p>
+    <button class="overlay-connect-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</div>
+
+<!-- ──────────── HEADER ──────────── -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Hyper<span>Gen</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div id="network-badge">
+      <div class="chain-dot"></div>
+      <span id="network-name">Base</span>
+    </div>
+    <button id="wallet-btn" onclick="connectWallet()">
+      <div class="dot"></div>
+      <span id="wallet-label">Connect Wallet</span>
+    </button>
+  </div>
+</header>
+
+<!-- ──────────── MAIN ──────────── -->
+<main>
+  <div class="hero">
+    <div class="cost-pill">⚡ $1 USDC per image · Base Network · HyperCycle Node</div>
+    <h1>Generate images<br>with <em>AI + Web3</em></h1>
+    <p>Pay once per image with USDC on Base. Your prompt goes straight to a HyperCycle AI node.</p>
+  </div>
+
+  <!-- ── GENERATE FORM ── -->
+  <div class="card" id="form-card">
+    <label class="field-label">YOUR PROMPT</label>
+    <div class="prompt-wrap">
+      <textarea id="prompt" placeholder="A cinematic photo of a lone astronaut standing on a neon-lit alien planet at dusk, ultra detailed, 8k…"></textarea>
+    </div>
+    <div class="prompt-examples">
+      <div class="example-chip" onclick="setPrompt('A futuristic city at night, cyberpunk aesthetic, rain-soaked streets reflecting neon signs')">Cyberpunk city</div>
+      <div class="example-chip" onclick="setPrompt('Hyperrealistic portrait of an elderly fisherman, weathered face, golden hour lighting')">Portrait</div>
+      <div class="example-chip" onclick="setPrompt('Abstract fluid art, vibrant colors, macro photography, 4k')">Abstract art</div>
+      <div class="example-chip" onclick="setPrompt('Photorealistic fantasy dragon perched on a mountain peak, dramatic storm clouds')">Fantasy dragon</div>
+    </div>
+
+    <div style="margin-top:20px;margin-bottom:4px;">
+      <label class="field-label">HYPERCYCLE NODE URL</label>
+      <input id="node-url" class="node-input" type="url"
+        placeholder="http://your-node-ip:8080"
+        value="http://localhost:8080"/>
+      <label class="field-label">AIM ENDPOINT (image generation path)</label>
+      <input id="aim-path" class="node-input" type="text"
+        placeholder="/aim/image-gen/generate"
+        value="/aim/image-gen/generate"/>
+      <label class="field-label">USDC PAYMENT RECEIVER (your treasury wallet)</label>
+      <input id="treasury" class="node-input" type="text"
+        placeholder="0xYourTreasury…"/>
+    </div>
+
+    <button id="generate-btn" onclick="startFlow()">
+      <span class="btn-icon">✦</span>
+      Generate Image · Pay $1 USDC
+    </button>
+  </div>
+
+  <!-- ── STATUS ── -->
+  <div id="status-area">
+    <div class="status-card">
+      <ul class="step-list" id="step-list">
+        <li class="step-item" id="step-payment">
+          <div class="step-icon pending" id="step-payment-icon">1</div>
+          <div class="step-body">
+            <div class="step-title">Payment on Base</div>
+            <div class="step-detail" id="step-payment-detail">Waiting…</div>
+          </div>
+        </li>
+        <li class="step-item" id="step-sign">
+          <div class="step-icon pending" id="step-sign-icon">2</div>
+          <div class="step-body">
+            <div class="step-title">Sign HyperCycle Request</div>
+            <div class="step-detail" id="step-sign-detail">Pending payment confirmation</div>
+          </div>
+        </li>
+        <li class="step-item" id="step-node">
+          <div class="step-icon pending" id="step-node-icon">3</div>
+          <div class="step-body">
+            <div class="step-title">HyperCycle Node Processing</div>
+            <div class="step-detail" id="step-node-detail">Pending…</div>
+          </div>
+        </li>
+        <li class="step-item" id="step-result">
+          <div class="step-icon pending" id="step-result-icon">4</div>
+          <div class="step-body">
+            <div class="step-title">Receiving Image</div>
+            <div class="step-detail" id="step-result-detail">Pending…</div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── ERROR ── -->
+  <div id="error-area">
+    <div class="error-card">
+      <div class="error-icon">✕</div>
+      <div id="error-msg">Something went wrong.</div>
+    </div>
+  </div>
+
+  <!-- ── RESULT IMAGE ── -->
+  <div id="result-area">
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-tag"><div class="result-tag-dot"></div> Image generated</div>
+        <div class="result-meta" id="result-meta">via HyperCycle</div>
+      </div>
+      <img id="result-img" src="" alt="Generated image"/>
+      <div class="result-footer">
+        <a class="dl-btn" id="dl-btn" download="hypercycle-image.png">↓ Download</a>
+        <button class="new-btn" onclick="resetUI()">↺ New image</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATS ── -->
+  <div class="info-row">
+    <div class="info-tile"><div class="val">$1</div><div class="lbl">USDC / image</div></div>
+    <div class="info-tile"><div class="val">Base</div><div class="lbl">L2 network</div></div>
+    <div class="info-tile"><div class="val">~30s</div><div class="lbl">avg. gen time</div></div>
+  </div>
+
+  <div class="disclaimer">
+    Payments are USDC on Base · Images served by a HyperCycle AIM node<br>
+    <a href="https://hypercycle.ai" target="_blank">HyperCycle docs</a> ·
+    <a href="https://docs.base.org" target="_blank">Base network</a>
+  </div>
+</main>
+
+<!-- ──────────── SCRIPTS ──────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+<script>
+// ────────────────────────────────────────────
+// CONFIG
+// ────────────────────────────────────────────
+const BASE_CHAIN_ID = 8453;
+const BASE_CHAIN_ID_HEX = '0x2105';
+// USDC on Base mainnet
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+// $1 USDC = 1_000_000 (6 decimals)
+const PAYMENT_AMOUNT = 1_000_000n;
+
+const USDC_ABI = [
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function decimals() view returns (uint8)',
+  'function balanceOf(address) view returns (uint256)',
+  'function allowance(address,address) view returns (uint256)',
+];
+
+// ────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────
+let provider = null;
+let signer = null;
+let userAddress = null;
+
+// ────────────────────────────────────────────
+// WALLET
+// ────────────────────────────────────────────
+async function connectWallet() {
+  if (!window.ethereum) {
+    showError('No wallet detected. Please install MetaMask or a compatible wallet.');
+    return;
+  }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await provider.send('eth_requestAccounts', []);
+    userAddress = accounts[0];
+    signer = await provider.getSigner();
+
+    await ensureBaseNetwork();
+    updateWalletUI();
+    document.getElementById('connect-overlay').classList.add('hidden');
+  } catch (e) {
+    showError('Wallet connection failed: ' + (e.message || e));
+  }
+}
+
+async function ensureBaseNetwork() {
+  const network = await provider.getNetwork();
+  if (Number(network.chainId) !== BASE_CHAIN_ID) {
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: BASE_CHAIN_ID_HEX }],
+      });
+    } catch (switchErr) {
+      if (switchErr.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: BASE_CHAIN_ID_HEX,
+            chainName: 'Base',
+            nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+            rpcUrls: ['https://mainnet.base.org'],
+            blockExplorerUrls: ['https://basescan.org'],
+          }],
+        });
+      } else throw switchErr;
+    }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+  }
+}
+
+function updateWalletUI() {
+  const btn = document.getElementById('wallet-btn');
+  const lbl = document.getElementById('wallet-label');
+  const badge = document.getElementById('network-badge');
+
+  if (userAddress) {
+    btn.classList.add('connected');
+    lbl.textContent = userAddress.slice(0, 6) + '…' + userAddress.slice(-4);
+    badge.classList.add('visible');
+    document.getElementById('network-name').textContent = 'Base';
+  } else {
+    btn.classList.remove('connected');
+    lbl.textContent = 'Connect Wallet';
+    badge.classList.remove('visible');
+  }
+}
+
+// ────────────────────────────────────────────
+// MAIN FLOW
+// ────────────────────────────────────────────
+async function startFlow() {
+  clearMessages();
+  const prompt = document.getElementById('prompt').value.trim();
+  const nodeUrl = document.getElementById('node-url').value.trim();
+  const aimPath = document.getElementById('aim-path').value.trim();
+  const treasury = document.getElementById('treasury').value.trim();
+
+  if (!prompt) { showError('Please enter a prompt.'); return; }
+  if (!nodeUrl) { showError('Please enter your HyperCycle node URL.'); return; }
+  if (!treasury || !ethers.isAddress(treasury)) { showError('Please enter a valid treasury wallet address.'); return; }
+  if (!userAddress) { await connectWallet(); return; }
+
+  showStatus();
+  document.getElementById('generate-btn').disabled = true;
+
+  try {
+    // ── STEP 1: Payment ──
+    stepActive('payment', 'Confirm USDC transfer in your wallet…');
+    const txHash = await sendUSDC(treasury);
+    stepDone('payment', 'Tx: ' + txHash.slice(0, 18) + '…');
+
+    // ── STEP 2: Sign request ──
+    stepActive('sign', 'Sign the HyperCycle request payload…');
+    const { signature, payload } = await signHyperCycleRequest(prompt, txHash);
+    stepDone('sign', 'Signed · nonce: ' + payload.nonce.slice(0, 10) + '…');
+
+    // ── STEP 3: Call node ──
+    stepActive('node', 'Sending to HyperCycle node · ' + nodeUrl);
+    const imageData = await callHyperCycleNode(nodeUrl, aimPath, payload, signature);
+    stepDone('node', 'Node responded successfully');
+
+    // ── STEP 4: Display ──
+    stepActive('result', 'Decoding image data…');
+    displayImage(imageData, prompt);
+    stepDone('result', 'Image ready');
+
+  } catch (err) {
+    showError(err.message || String(err));
+    // revert the active step to error
+    ['result','node','sign','payment'].forEach(s => {
+      const icon = document.getElementById('step-' + s + '-icon');
+      if (icon.classList.contains('active')) {
+        icon.classList.remove('active');
+        icon.classList.add('error');
+        icon.textContent = '✕';
+      }
+    });
+  } finally {
+    document.getElementById('generate-btn').disabled = false;
+  }
+}
+
+// ────────────────────────────────────────────
+// USDC PAYMENT ON BASE
+// ────────────────────────────────────────────
+async function sendUSDC(toAddress) {
+  await ensureBaseNetwork();
+  const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+  const balance = await usdc.balanceOf(userAddress);
+  if (balance < PAYMENT_AMOUNT) {
+    throw new Error('Insufficient USDC balance. You need at least 1 USDC on Base.');
+  }
+  const tx = await usdc.transfer(toAddress, PAYMENT_AMOUNT);
+  stepDetail('payment', 'Waiting for confirmation · ' + tx.hash.slice(0, 14) + '…');
+  await tx.wait(1);
+  return tx.hash;
+}
+
+// ────────────────────────────────────────────
+// SIGN HYPERCYCLE REQUEST
+// Per the docs: clients sign intent to spend; Node Manager verifies
+// The signature proves: wallet address + prompt + tx hash + nonce
+// ────────────────────────────────────────────
+async function signHyperCycleRequest(prompt, paymentTxHash) {
+  const nonce = ethers.hexlify(ethers.randomBytes(16));
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  const payload = {
+    caller: userAddress,
+    prompt: prompt,
+    payment_tx: paymentTxHash,
+    payment_chain: 'base',
+    payment_amount_usdc: '1.00',
+    nonce: nonce,
+    timestamp: timestamp,
+  };
+
+  // EIP-191 personal sign of the canonical payload string
+  const message = JSON.stringify(payload);
+  const signature = await signer.signMessage(message);
+
+  return { signature, payload };
+}
+
+// ────────────────────────────────────────────
+// CALL HYPERCYCLE NODE MANAGER
+// The Node Manager API expects: signed request forwarded to the AIM
+// Per docs: POST to node/<aim_path> with signed body
+// The NM verifies signature, deducts balance, routes to AIM container
+// ────────────────────────────────────────────
+async function callHyperCycleNode(nodeUrl, aimPath, payload, signature) {
+  const endpoint = nodeUrl.replace(/\/$/, '') + aimPath;
+
+  // HyperCycle Node Manager request envelope
+  const body = {
+    request: payload,
+    signature: signature,
+    client_address: userAddress,
+  };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-HyperCycle-Client': userAddress,
+        'X-HyperCycle-Signature': signature,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') throw new Error('Node request timed out (120s). The node may be busy or unreachable.');
+    throw new Error('Cannot reach HyperCycle node at ' + nodeUrl + '. Check the URL and ensure the node is running and CORS is enabled.');
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    let detail = '';
+    try { detail = await response.text(); } catch {}
+    throw new Error('Node returned ' + response.status + ': ' + (detail || response.statusText));
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+
+  // The AIM may return raw image bytes or a JSON wrapper
+  if (contentType.includes('image/')) {
+    const blob = await response.blob();
+    return { type: 'blob', data: blob };
+  }
+
+  const json = await response.json();
+
+  // Accept common response shapes from image AIMs
+  if (json.image_base64) return { type: 'base64', data: json.image_base64, mime: json.mime_type || 'image/png' };
+  if (json.result?.image_base64) return { type: 'base64', data: json.result.image_base64, mime: json.result.mime_type || 'image/png' };
+  if (json.image_url) return { type: 'url', data: json.image_url };
+  if (json.result?.image_url) return { type: 'url', data: json.result.image_url };
+  if (json.output) return { type: 'base64', data: json.output, mime: 'image/png' };
+
+  throw new Error('Node response did not contain a recognisable image. Keys received: ' + Object.keys(json).join(', '));
+}
+
+// ────────────────────────────────────────────
+// DISPLAY IMAGE
+// ────────────────────────────────────────────
+function displayImage(imageData, prompt) {
+  const img = document.getElementById('result-img');
+  const dlBtn = document.getElementById('dl-btn');
+  const meta = document.getElementById('result-meta');
+
+  let src = '';
+  if (imageData.type === 'blob') {
+    src = URL.createObjectURL(imageData.data);
+  } else if (imageData.type === 'base64') {
+    src = 'data:' + (imageData.mime || 'image/png') + ';base64,' + imageData.data;
+  } else {
+    src = imageData.data;
+  }
+
+  img.src = src;
+  dlBtn.href = src;
+  dlBtn.download = 'hypercycle-' + Date.now() + '.png';
+  meta.textContent = prompt.slice(0, 60) + (prompt.length > 60 ? '…' : '');
+
+  document.getElementById('result-area').classList.add('visible');
+}
+
+// ────────────────────────────────────────────
+// UI HELPERS
+// ────────────────────────────────────────────
+function stepActive(name, detail) {
+  const icon = document.getElementById('step-' + name + '-icon');
+  icon.className = 'step-icon active';
+  icon.textContent = '●';
+  if (detail) document.getElementById('step-' + name + '-detail').textContent = detail;
+}
+function stepDone(name, detail) {
+  const icon = document.getElementById('step-' + name + '-icon');
+  icon.className = 'step-icon done';
+  icon.textContent = '✓';
+  if (detail) document.getElementById('step-' + name + '-detail').textContent = detail;
+}
+function stepDetail(name, detail) {
+  document.getElementById('step-' + name + '-detail').textContent = detail;
+}
+
+function showStatus() {
+  document.getElementById('status-area').classList.add('visible');
+  document.getElementById('error-area').classList.remove('visible');
+  document.getElementById('result-area').classList.remove('visible');
+}
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-area').classList.add('visible');
+}
+function clearMessages() {
+  document.getElementById('error-area').classList.remove('visible');
+  document.getElementById('result-area').classList.remove('visible');
+  // reset steps
+  ['payment','sign','node','result'].forEach(s => {
+    const icon = document.getElementById('step-' + s + '-icon');
+    const n = {payment:'1',sign:'2',node:'3',result:'4'}[s];
+    icon.className = 'step-icon pending';
+    icon.textContent = n;
+    const defaultDetails = {
+      payment: 'Waiting…',
+      sign: 'Pending payment confirmation',
+      node: 'Pending…',
+      result: 'Pending…',
+    };
+    document.getElementById('step-' + s + '-detail').textContent = defaultDetails[s];
+  });
+}
+
+function resetUI() {
+  document.getElementById('result-area').classList.remove('visible');
+  document.getElementById('status-area').classList.remove('visible');
+  document.getElementById('error-area').classList.remove('visible');
+  document.getElementById('prompt').value = '';
+}
+
+function setPrompt(text) {
+  document.getElementById('prompt').value = text;
+  document.getElementById('prompt').focus();
+}
+
+// ────────────────────────────────────────────
+// AUTO-CONNECT if already authorised
+// ────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        userAddress = accounts[0];
+        signer = await provider.getSigner();
+        updateWalletUI();
+        document.getElementById('connect-overlay').classList.add('hidden');
+      }
+    } catch {}
+
+    window.ethereum.on('accountsChanged', (accs) => {
+      userAddress = accs[0] || null;
+      if (!userAddress) document.getElementById('connect-overlay').classList.remove('hidden');
+      updateWalletUI();
+    });
+    window.ethereum.on('chainChanged', () => window.location.reload());
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "hypergen",
+  "version": "1.0.0",
+  "description": "AI image generation frontend on HyperCycle + Base",
+  "scripts": {
+    "dev": "npx serve public -l 3000",
+    "start": "npx serve public -l 3000",
+    "build": "echo 'No build step needed — static site'"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  }
+}
