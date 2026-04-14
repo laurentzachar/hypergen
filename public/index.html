@@ -533,9 +533,7 @@
       <input id="aim-path" class="node-input" type="text"
         placeholder="/aim/image-gen/generate"
         value="/aim/image-gen/generate"/>
-      <label class="field-label">USDC PAYMENT RECEIVER (your treasury wallet)</label>
-      <input id="treasury" class="node-input" type="text"
-        placeholder="0xYourTreasury…"/>
+
     </div>
 
     <button id="generate-btn" onclick="startFlow()">
@@ -718,11 +716,10 @@ async function startFlow() {
   const prompt = document.getElementById('prompt').value.trim();
   const nodeUrl = document.getElementById('node-url').value.trim();
   const aimPath = document.getElementById('aim-path').value.trim();
-  const treasury = document.getElementById('treasury').value.trim();
+  const treasury = '0xFf4f2c8428d5075a7Ce17197221aA4eFE298538B';
 
   if (!prompt) { showError('Please enter a prompt.'); return; }
   if (!nodeUrl) { showError('Please enter your HyperCycle node URL.'); return; }
-  if (!treasury || !ethers.isAddress(treasury)) { showError('Please enter a valid treasury wallet address.'); return; }
   if (!userAddress) { await connectWallet(); return; }
 
   showStatus();
